@@ -2,37 +2,101 @@ package usecase
 
 import (
 	"github.com/jeagerism/ecommerce-api/domain"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/jeagerism/ecommerce-api/entity"
+	"github.com/jeagerism/ecommerce-api/util"
+	"github.com/pkg/errors"
 )
 
 type shopUsecase struct {
-	repo domain.ShopRepository
+	repo      domain.ShopRepository
+	jwtSecret []byte
 }
 
-func NewShopUsecase(repo domain.ShopRepository) domain.ShopUsecase {
-	return &shopUsecase{repo: repo}
+func NewShopUsecase(r domain.ShopRepository, secret []byte) domain.ShopUsecase {
+	return &shopUsecase{
+		repo:      r,
+		jwtSecret: secret,
+	}
 }
 
-// ฟังก์ชัน hash password
-func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes), err
-}
-
-func (u *shopUsecase) CreateShop(input domain.CreatShop) error {
-	hashedPassword, err := hashPassword(input.Password)
+func (u *shopUsecase) RegisterShop(input *entity.CreateShop) error {
+	hashedPassword, err := util.HashPassword(input.Password)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "[ShopUsecase.CreateShop] failed to hash password")
 	}
 
-	// สร้าง struct ใหม่ พร้อมใส่ password ที่ hash แล้ว
-	secureShop := domain.CreatShop{
+	secureShop := entity.CreateShop{
 		Name:     input.Name,
 		Email:    input.Email,
 		Password: hashedPassword,
 		Address:  input.Address,
 	}
 
-	// ส่งให้ repository บันทึกลง DB
-	return u.repo.Create(secureShop)
+	if err := u.repo.InsertShop(&secureShop); err != nil {
+		return errors.Wrap(err, "[ShopUsecase.CreateShop] failed to create shop in repository")
+	}
+
+	return nil
+}
+
+func (u *shopUsecase) LoginShop(input *entity.ShopLoginInput) (string, error) {
+	shop, err := u.repo.FindShopByEmail(input.Email)
+	if err != nil {
+		return "", errors.Wrap(err, "[ShopUsecase.LoginShop] failed to find shop by email")
+	}
+	if shop == nil {
+		return "", errors.New("[ShopUsecase.LoginShop] invalid email or password")
+	}
+
+	if err := util.CheckPasswordHash(shop.Password, input.Password); err != nil {
+		return "", errors.New("[ShopUsecase.LoginShop] invalid email or password")
+	}
+
+	token, err := util.GenerateJWT(shop.ID, shop.Email, "shop", u.jwtSecret)
+	if err != nil {
+		return "", errors.Wrap(err, "[ShopUsecase.LoginShop] failed to generate JWT")
+	}
+	return token, nil
+}
+
+func (u *shopUsecase) GetShopDetails(shopId uint) (*entity.GetShop, error) {
+	shop, err := u.repo.FindShopByID(shopId)
+	if err != nil {
+		return nil, errors.Wrap(err, "[ShopUsecase.GetShopDetails] failed to find shop by ID")
+	}
+	return shop, nil
+}
+
+func (u *shopUsecase) UpdateShop(shopId uint, input *entity.UpdateShop) error {
+	// Find the shop by ID
+	shop, err := u.repo.FindShopByID(shopId)
+	if err != nil {
+		return errors.Wrap(err, "[ShopUsecase.UpdateShop] failed to find shop by ID")
+	}
+	if shop == nil {
+		return errors.Wrap(err, "[ShopUsecase.UpdateShop] shop not found")
+	}
+
+	// Create a new entity.Shop object for updating
+	updatedShop := &entity.Shop{
+		ID:      shop.ID,
+		Name:    input.Name,
+		Email:   input.Email,
+		Address: input.Address,
+	}
+
+	// Call the repository to update the shop
+	if err := u.repo.UpdateShop(updatedShop); err != nil {
+		return errors.Wrap(err, "[ShopUsecase.UpdateShop] failed to update shop")
+	}
+
+	return nil
+}
+
+func (u *shopUsecase) DeleteShop(shopId uint) error {
+	// Call the repository to delete the shop
+	if err := u.repo.DeleteShop(shopId); err != nil {
+		return errors.Wrap(err, "[ShopUsecase.DeleteShop] failed to delete shop")
+	}
+	return nil
 }

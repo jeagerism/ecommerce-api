@@ -2,56 +2,78 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
-	"net/http"
 
 	"github.com/jeagerism/ecommerce-api/entity"
 	"github.com/jeagerism/ecommerce-api/feature/shop/delivery"
 	"github.com/jeagerism/ecommerce-api/feature/shop/repository"
 	"github.com/jeagerism/ecommerce-api/feature/shop/usecase"
+	"github.com/jeagerism/ecommerce-api/middleware"
+
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
 var DB *gorm.DB
 
 func init() {
+	// Configure logrus
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.InfoLevel)
+
 	var err error
 	DB, err = newDB()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal("Failed to connect to the database: ", err)
 	}
 
-	// Auto migrate ตรงนี้เลย
+	// Auto migrate
 	err = DB.AutoMigrate(&entity.Shop{})
 	if err != nil {
-		log.Fatal("migration failed: ", err)
+		logrus.Fatal("Migration failed: ", err)
 	}
 }
 
 func main() {
-	e := echo.New()
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
+	_ = godotenv.Load()
 
-	api := e.Group("/api")
-	delivery.NewHandler(api, usecase.NewShopUsecase(repository.NewShopRepository(DB)))
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	e := echo.New()
+
+	// 🔓 public routes (no middleware)
+	public := e.Group("/api")
+	delivery.NewPublicHandler(public, usecase.NewShopUsecase(repository.NewShopRepository(DB), jwtSecret))
+
+	// 🔐 protected routes (requires auth)
+	protected := e.Group("/api")
+	protected.Use(middleware.RoleAuthMiddleware(jwtSecret, "shop"))
+	delivery.NewProtectedHandler(protected, usecase.NewShopUsecase(repository.NewShopRepository(DB), jwtSecret))
+
+	logrus.Info("Starting server on port :1323")
 	e.Logger.Fatal(e.Start(":1323"))
 }
 
 func newDB() (*gorm.DB, error) {
+	_ = godotenv.Load()
+
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
+
 	connString := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		"localhost", // host = docker-compose port mapped to localhost
-		"5432",      // port ที่เปิดไว้
-		"user",      // POSTGRES_USER
-		"password",  // POSTGRES_PASSWORD
-		"ecommerce", // POSTGRES_DB
+		host, port, user, password, dbname,
 	)
 
+	logrus.Info("Connecting to the database...")
 	return gorm.Open(postgres.Open(connString), &gorm.Config{})
 }

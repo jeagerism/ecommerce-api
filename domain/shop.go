@@ -1,24 +1,19 @@
 package domain
 
-type Shop struct {
-	ID       uint   `json:"id" gorm:"primaryKey;autoIncrement"`
-	Name     string `json:"name" gorm:"not null"`
-	Email    string `json:"email" gorm:"unique;not null"`
-	Password string `json:"-" gorm:"not null"` // ซ่อน password จาก JSON response ยังใช้ใน goได้
-	Address  string `json:"address" gorm:"not null"`
-}
-
-type CreatShop struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Address  string `json:"address"`
-}
+import "github.com/jeagerism/ecommerce-api/entity"
 
 type ShopRepository interface {
-	Create(CreatShop) error
+	InsertShop(*entity.CreateShop) error
+	FindShopByEmail(string) (*entity.Shop, error)
+	FindShopByID(id uint) (*entity.GetShop, error)
+	UpdateShop(*entity.Shop) error
+	DeleteShop(id uint) error
 }
 
 type ShopUsecase interface {
-	CreateShop(CreatShop) error
+	RegisterShop(*entity.CreateShop) error
+	LoginShop(input *entity.ShopLoginInput) (string, error)
+	GetShopDetails(uint) (*entity.GetShop, error)
+	UpdateShop(uint, *entity.UpdateShop) error
+	DeleteShop(uint) error
 }
