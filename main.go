@@ -8,9 +8,12 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/jeagerism/ecommerce-api/entity"
-	"github.com/jeagerism/ecommerce-api/feature/shop/delivery"
-	"github.com/jeagerism/ecommerce-api/feature/shop/repository"
-	"github.com/jeagerism/ecommerce-api/feature/shop/usecase"
+	productDel "github.com/jeagerism/ecommerce-api/feature/product/delivery"
+	productRepo "github.com/jeagerism/ecommerce-api/feature/product/repository"
+	productUsecase "github.com/jeagerism/ecommerce-api/feature/product/usecase"
+	shopDel "github.com/jeagerism/ecommerce-api/feature/shop/delivery"
+	shopRepo "github.com/jeagerism/ecommerce-api/feature/shop/repository"
+	shopUsecase "github.com/jeagerism/ecommerce-api/feature/shop/usecase"
 	"github.com/jeagerism/ecommerce-api/middleware"
 
 	"github.com/joho/godotenv"
@@ -35,7 +38,7 @@ func init() {
 	}
 
 	// Auto migrate
-	err = DB.AutoMigrate(&entity.Shop{})
+	err = DB.AutoMigrate(&entity.Shop{}, &entity.Product{})
 	if err != nil {
 		logrus.Fatal("Migration failed: ", err)
 	}
@@ -43,18 +46,24 @@ func init() {
 
 func main() {
 	_ = godotenv.Load()
-
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	e := echo.New()
 
-	// 🔓 public routes (no middleware)
+	// 👇 Group แยก public / protected
 	public := e.Group("/api")
-	delivery.NewPublicHandler(public, usecase.NewShopUsecase(repository.NewShopRepository(DB), jwtSecret))
-
-	// 🔐 protected routes (requires auth)
 	protected := e.Group("/api")
+
 	protected.Use(middleware.RoleAuthMiddleware(jwtSecret, "shop"))
-	delivery.NewProtectedHandler(protected, usecase.NewShopUsecase(repository.NewShopRepository(DB), jwtSecret))
+
+	// ⬇️ Shop setup
+
+	shopDel.NewPublicHandler(public, shopUsecase.NewShopUsecase(shopRepo.NewShopRepository(DB), jwtSecret))
+	shopDel.NewProtectedHandler(protected, shopUsecase.NewShopUsecase(shopRepo.NewShopRepository(DB), jwtSecret))
+
+	// ⬇️ Product setup
+
+	productDel.NewPublicProductHandler(public, productUsecase.NewProductUsecase(productRepo.NewProductRepository(DB), jwtSecret))
+	productDel.NewProtectedProductHandler(protected, productUsecase.NewProductUsecase(productRepo.NewProductRepository(DB), jwtSecret))
 
 	logrus.Info("Starting server on port :1323")
 	e.Logger.Fatal(e.Start(":1323"))
