@@ -8,15 +8,11 @@ type Shop struct {
 	Address  string `json:"address" gorm:"type:text;not null"`
 }
 
-type GetShop struct {
+type ShopResponse struct {
 	ID      uint   `json:"id"`
 	Name    string `json:"name"`
 	Email   string `json:"email"`
 	Address string `json:"address"`
-}
-
-func (GetShop) TableName() string {
-	return "shops" // Replace with the correct table name
 }
 
 type CreateShop struct {

@@ -16,13 +16,7 @@ func NewShopRepository(db *gorm.DB) domain.ShopRepository {
 	return &shopRepository{db: db}
 }
 
-func (r *shopRepository) InsertShop(data *entity.CreateShop) error {
-	shop := entity.Shop{
-		Name:     data.Name,
-		Email:    data.Email,
-		Password: data.Password,
-		Address:  data.Address,
-	}
+func (r *shopRepository) InsertShop(shop *entity.Shop) error {
 
 	if err := r.db.Create(&shop).Error; err != nil {
 		return errors.Wrap(err, "[ShopRepository.CreateShop]: failed to insert shop into database")
@@ -42,14 +36,13 @@ func (r *shopRepository) FindShopByEmail(email string) (*entity.Shop, error) {
 	return &shop, nil
 }
 
-func (r *shopRepository) FindShopByID(id uint) (*entity.GetShop, error) {
-	var shop entity.GetShop
-	if err := r.db.Where("id = ?", id).First(&shop).Error; err != nil { // Explicitly specify the table name
+func (r *shopRepository) FindShopByID(id uint) (*entity.Shop, error) {
+	var shop entity.Shop
+	if err := r.db.First(&shop, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		// if ids instead of id make this error bro!
-		return nil, errors.Wrap(err, "[ShopRepository.FindByID]: failed to find shop by ID")
+		return nil, errors.Wrap(err, "[ShopRepository.FindByID] failed to find shop")
 	}
 	return &shop, nil
 }

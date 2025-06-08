@@ -8,13 +8,11 @@ import (
 
 type productUsecase struct {
 	productRepo domain.ProductRepository
-	jwtSecret   []byte
 }
 
-func NewProductUsecase(r domain.ProductRepository, secret []byte) domain.ProductUsecase {
+func NewProductUsecase(r domain.ProductRepository) domain.ProductUsecase {
 	return &productUsecase{
 		productRepo: r,
-		jwtSecret:   secret,
 	}
 }
 
@@ -34,7 +32,7 @@ func (u *productUsecase) CreateProduct(shopID uint, input *entity.CreateProduct)
 	return nil
 }
 
-func (u *productUsecase) GetAllProductsByShopID(shopID uint) ([]*entity.Product, error) {
+func (u *productUsecase) GetAllProductsByShopID(shopID uint) ([]entity.Product, error) {
 	products, err := u.productRepo.FindAllProductsByShopID(shopID)
 	if err != nil {
 		return nil, errors.Wrap(err, "[ProductUsecase.GetAllProductsByShopID] failed to retrieve products by shop ID")

@@ -44,7 +44,6 @@ func (h *Handler) RegisterShopHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Something went wrong"})
 	}
 
-	logrus.Infof("[ShopDelivery.RegisterShopHandler] Shop registered successfully: %s", input.Email)
 	return c.JSON(http.StatusCreated, echo.Map{"message": "Shop registered successfully"})
 }
 
@@ -61,7 +60,6 @@ func (h *Handler) LoginShopHandler(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Invalid email or password"})
 	}
 
-	logrus.Infof("[ShopDelivery.LoginShopHandler] Shop logged in: %s", input.Email)
 	return c.JSON(http.StatusOK, echo.Map{"token": token})
 }
 
@@ -83,7 +81,6 @@ func (h *Handler) GetShopDetailsHandler(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": "Shop not found"})
 	}
 
-	logrus.Infof("[ShopDelivery.GetShopDetailsHandler] Shop details retrieved: ID %d", shopID)
 	return c.JSON(http.StatusOK, shop)
 }
 
@@ -106,7 +103,6 @@ func (h *Handler) UpdateShopHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "could not update shop"})
 	}
 
-	logrus.Infof("[ShopDelivery.UpdateShopHandler] Shop updated successfully: ID %d", shopID)
 	return c.JSON(http.StatusOK, echo.Map{"message": "shop updated"})
 }
 
@@ -123,6 +119,5 @@ func (h *Handler) DeleteShopHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "could not delete shop"})
 	}
 
-	logrus.Infof("[ShopDelivery.DeleteShopHandler] Shop deleted successfully: ID %d", shopID)
 	return c.JSON(http.StatusOK, echo.Map{"message": "shop deleted"})
 }

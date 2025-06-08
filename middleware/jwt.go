@@ -39,10 +39,8 @@ func RoleAuthMiddleware(secret []byte, expectedRole string) echo.MiddlewareFunc 
 
 			// Extract ID from claims based on role
 			if expectedRole == "shop" {
-				logrus.Infof("[RoleAuthMiddleware] Authorized shop with ID: %d", claims.ID)
 				c.Set("shopID", claims.ID)
 			} else if expectedRole == "user" {
-				logrus.Infof("[RoleAuthMiddleware] Authorized user with ID: %d", claims.ID)
 				c.Set("userID", claims.ID)
 			} else {
 				logrus.Warnf("[RoleAuthMiddleware] Unknown role: %s", claims.Role)

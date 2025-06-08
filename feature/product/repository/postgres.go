@@ -23,8 +23,8 @@ func (r *productRepository) InsertProduct(data *entity.Product) error {
 	return nil
 }
 
-func (r *productRepository) FindAllProductsByShopID(shopID uint) ([]*entity.Product, error) {
-	var products []*entity.Product
+func (r *productRepository) FindAllProductsByShopID(shopID uint) ([]entity.Product, error) {
+	var products []entity.Product
 	if err := r.db.Where("shop_id = ?", shopID).Find(&products).Error; err != nil {
 		return nil, errors.Wrap(err, "[ProductRepository.FindAllProductsByShopID]: failed to retrieve products by shop ID")
 	}

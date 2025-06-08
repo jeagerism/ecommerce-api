@@ -25,7 +25,7 @@ func (u *shopUsecase) RegisterShop(input *entity.CreateShop) error {
 		return errors.Wrap(err, "[ShopUsecase.CreateShop] failed to hash password")
 	}
 
-	secureShop := entity.CreateShop{
+	secureShop := entity.Shop{
 		Name:     input.Name,
 		Email:    input.Email,
 		Password: hashedPassword,
@@ -59,12 +59,21 @@ func (u *shopUsecase) LoginShop(input *entity.ShopLoginInput) (string, error) {
 	return token, nil
 }
 
-func (u *shopUsecase) GetShopDetails(shopId uint) (*entity.GetShop, error) {
+func (u *shopUsecase) GetShopDetails(shopId uint) (*entity.ShopResponse, error) {
 	shop, err := u.repo.FindShopByID(shopId)
 	if err != nil {
 		return nil, errors.Wrap(err, "[ShopUsecase.GetShopDetails] failed to find shop by ID")
 	}
-	return shop, nil
+	if shop == nil {
+		return nil, nil
+	}
+
+	return &entity.ShopResponse{
+		ID:      shop.ID,
+		Name:    shop.Name,
+		Email:   shop.Email,
+		Address: shop.Address,
+	}, nil
 }
 
 func (u *shopUsecase) UpdateShop(shopId uint, input *entity.UpdateShop) error {

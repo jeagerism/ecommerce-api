@@ -46,7 +46,6 @@ func (h *ProductHandler) CreateProductHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to create product"})
 	}
 
-	logrus.Infof("[ProductHandler.CreateProductHandler] Product created successfully: %s", input.Name)
 	return c.JSON(http.StatusCreated, echo.Map{"message": "product created successfully"})
 }
 
@@ -92,7 +91,6 @@ func (h *ProductHandler) UpdateProductHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to update product"})
 	}
 
-	logrus.Infof("[ProductHandler.UpdateProductHandler] Product updated successfully: %d", productID)
 	return c.JSON(http.StatusOK, echo.Map{"message": "product updated successfully"})
 }
 
@@ -115,6 +113,5 @@ func (h *ProductHandler) DeleteProductHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to delete product"})
 	}
 
-	logrus.Infof("[ProductHandler.DeleteProductHandler] Product deleted successfully: %d", productID)
 	return c.JSON(http.StatusOK, echo.Map{"message": "product deleted successfully"})
 }
