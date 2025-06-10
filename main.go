@@ -95,7 +95,7 @@ func main() {
 	orderGroup := e.Group("/api/user/order")
 	orderGroup.Use(middleware.UserAuthMiddleware())
 	orderGroup.Use(middleware.RequireUserRole()) // สามารถเข้าถึงได้ทั้ง user และ shop
-	orderDel.NewProtectedOrderHandler(orderGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
+	orderDel.NewUserOrderHandler(orderGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
 
 	orderShopGroup := e.Group("/api/shop/order")
 	orderShopGroup.Use(middleware.ShopAuthMiddleware())
