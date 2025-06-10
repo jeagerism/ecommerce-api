@@ -8,9 +8,8 @@ import (
 )
 
 type JWTClaims struct {
-	ID    uint   `json:"id"` // สามารถเป็น user_id หรือ shop_id
-	Email string `json:"email"`
-	Role  string `json:"role"` // "user" หรือ "shop"
+	ID   uint   `json:"id"`   // สามารถเป็น user_id หรือ shop_id
+	Role string `json:"role"` // "user" หรือ "shop"
 	jwt.RegisteredClaims
 }
 
@@ -23,11 +22,10 @@ func CheckPasswordHash(hash string, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
-func GenerateJWT(id uint, email, role string, secret []byte) (string, error) {
+func GenerateJWT(id uint, role string, secret []byte) (string, error) {
 	claims := JWTClaims{
-		ID:    id,
-		Email: email,
-		Role:  role,
+		ID:   id,
+		Role: role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

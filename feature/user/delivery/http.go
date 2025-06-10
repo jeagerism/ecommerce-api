@@ -12,30 +12,19 @@ import (
 
 type UserHandler struct {
 	usecase domain.UserUsecase
-	e       *echo.Group
 }
 
-func NewPublicUserHandler(e *echo.Group, uc domain.UserUsecase) *UserHandler {
+func NewUserHandler(e *echo.Group, uc domain.UserUsecase) *UserHandler {
 	h := &UserHandler{
 		usecase: uc,
-		e:       e,
-	}
-
-	e.POST("/register", h.CreateUserHandler) // Create user
-	e.POST("/login", h.LoginHandler)         // Login
-
-	return h
-}
-
-func NewProtectedUserHandler(e *echo.Group, uc domain.UserUsecase) *UserHandler {
-	h := &UserHandler{
-		usecase: uc,
-		e:       e,
 	}
 
 	e.GET("/profile", h.GetProfileHandler)         // Get user profile
 	e.POST("/address", h.CreateUserAddressHandler) // Create user address
 	e.GET("/address", h.GetUserAddressByIDHandler) // Get user address by ID
+	e.POST("/register", h.CreateUserHandler)       // Create user
+	e.POST("/login", h.LoginHandler)               // Login
+
 	return h
 }
 
