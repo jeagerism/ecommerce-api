@@ -13,8 +13,11 @@ type OrderRepository interface {
 	FindStatusByID(statusID uint) (*entity.OrderStatus, error)
 	FindOrdersByShopID(shopID uint) ([]entity.Order, error)
 
-	FindOrderStatusInfo(orderID, shopID, userID uint) (entity.GetOrderStatus, error)
+	FindOrderStatusByUser(orderID, userID uint) (entity.GetOrderStatus, error)
+	FindOrderStatusByShop(orderID, shopID uint) (entity.GetOrderStatus, error)
+
 	UpdateOrderStatusByUser(orderID uint) error
+	UpdateOrderStatusByShop(orderID, statusID uint) error
 }
 
 type OrderUsecase interface {
@@ -24,5 +27,6 @@ type OrderUsecase interface {
 	CreateStatus(status *entity.OrderStatus) error
 	FindOrderByID(orderID, userID uint) (*entity.OrderDetailResponse, error)
 	FindOrdersByShopID(shopID uint) ([]entity.OrderDetailResponse, error)
-	UpdateOrderStatusByUser(orderReq entity.UpdateOrderStatusByUserRequest, userID uint) error
+	UpdateOrderStatusByUser(orderReq entity.UpdateOrderStatusRequest, userID uint) error
+	UpdateOrderStatusByShop(orderReq entity.UpdateOrderStatusRequest, shopID uint) error
 }

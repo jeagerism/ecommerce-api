@@ -57,7 +57,7 @@ func (u *userUsecase) Login(input *entity.LoginInput) (string, error) {
 		return "", errors.Wrap(err, "[UserUsecase.Login] invalid email or password")
 	}
 
-	userSecret := []byte(os.Getenv("JWT_SECRET")) // Replace with your actual secret key
+	userSecret := []byte(os.Getenv("USER_SECRET")) // Replace with your actual secret key
 	// Generate JWT token
 	token, err := util.GenerateJWT(user.ID, "user", userSecret)
 	if err != nil {

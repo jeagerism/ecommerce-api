@@ -36,13 +36,15 @@ type Courier struct {
 }
 
 type CreateOrderRequest struct {
-	ShopID    uint `json:"shop_id"`
-	AddressID uint `json:"address_id"`
-	CourierID uint `json:"courier_id"`
-	Items     []struct {
-		ProductID uint `json:"product_id"`
-		Quantity  int  `json:"quantity"`
-	} `json:"items"`
+	ShopID    uint                     `json:"shop_id"`
+	AddressID uint                     `json:"address_id"`
+	CourierID uint                     `json:"courier_id"`
+	Items     []CreateOrderItemRequest `json:"items"`
+}
+
+type CreateOrderItemRequest struct {
+	ProductID uint `json:"product_id"`
+	Quantity  int  `json:"quantity"`
 }
 
 type OrderSummary struct {
@@ -100,10 +102,4 @@ type GetOrderStatus struct {
 type GetOrderStatusName struct {
 	ID   uint
 	Name string
-}
-
-type UpdateOrderStatusByUserRequest struct {
-	OrderID  uint `json:"order_id"`
-	ShopID   uint `json:"shop_id"`
-	StatusID uint `json:"status_id"`
 }

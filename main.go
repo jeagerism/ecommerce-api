@@ -8,7 +8,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/jeagerism/ecommerce-api/entity"
-	orderDel "github.com/jeagerism/ecommerce-api/feature/order/delivery"
+	shopOrderDel "github.com/jeagerism/ecommerce-api/feature/order/delivery/shop"
+	userOrderDel "github.com/jeagerism/ecommerce-api/feature/order/delivery/user"
 	orderRepo "github.com/jeagerism/ecommerce-api/feature/order/repository"
 	orderUsecase "github.com/jeagerism/ecommerce-api/feature/order/usecase"
 	productDel "github.com/jeagerism/ecommerce-api/feature/product/delivery"
@@ -92,15 +93,16 @@ func main() {
 	userDel.NewUserHandler(userGroup, userUsecase.NewUserUsecase(userRepo.NewUserRepository(DB)))
 
 	// Order routes (protected by user role)
-	orderGroup := e.Group("/api/user/order")
+	orderGroup := e.Group("/api/user/")
 	orderGroup.Use(middleware.UserAuthMiddleware())
 	orderGroup.Use(middleware.RequireUserRole()) // สามารถเข้าถึงได้ทั้ง user และ shop
-	orderDel.NewUserOrderHandler(orderGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
+	userOrderDel.NewUserOrderHandler(orderGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
 
-	orderShopGroup := e.Group("/api/shop/order")
+	orderShopGroup := e.Group("/api/shop/")
 	orderShopGroup.Use(middleware.ShopAuthMiddleware())
 	orderShopGroup.Use(middleware.RequireShopRole()) // เฉพาะ shop เท่านั้นที่เข้าถึงได้
-	orderDel.NewShopOrderHandler(orderShopGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
+	shopOrderDel.NewShopOrderHandler(orderShopGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
+
 	e.Logger.Fatal(e.Start(":1323"))
 }
 

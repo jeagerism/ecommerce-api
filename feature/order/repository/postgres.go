@@ -125,6 +125,36 @@ func (r *orderRepository) FindOrdersByShopID(shopID uint) ([]entity.Order, error
 	return orders, nil
 }
 
+func (r *orderRepository) FindOrderStatusByUser(orderID, userID uint) (entity.GetOrderStatus, error) {
+	var order entity.GetOrderStatus
+
+	if err := r.db.
+		Model(&entity.Order{}).
+		Select("orders.id, orders.status_id, order_statuses.name").
+		Joins("JOIN order_statuses ON orders.status_id = order_statuses.id").
+		Where("orders.id = ? AND orders.user_id = ?", orderID, userID).
+		First(&order).Error; err != nil {
+		return order, err
+	}
+
+	return order, nil
+}
+
+func (r *orderRepository) FindOrderStatusByShop(orderID, shopID uint) (entity.GetOrderStatus, error) {
+	var order entity.GetOrderStatus
+
+	if err := r.db.
+		Model(&entity.Order{}).
+		Select("orders.id, orders.status_id, order_statuses.name").
+		Joins("JOIN order_statuses ON orders.status_id = order_statuses.id").
+		Where("orders.id = ? AND orders.shop_id = ?", orderID, shopID).
+		First(&order).Error; err != nil {
+		return order, err
+	}
+
+	return order, nil
+}
+
 func (r *orderRepository) UpdateOrderStatusByUser(orderID uint) error {
 	if err := r.db.Model(&entity.Order{}).
 		Where("id = ?", orderID). // ✅ เช็กว่า user นี้เป็นเจ้าของ order
@@ -134,17 +164,11 @@ func (r *orderRepository) UpdateOrderStatusByUser(orderID uint) error {
 	return nil
 }
 
-func (r *orderRepository) FindOrderStatusInfo(orderID, shopID, userID uint) (entity.GetOrderStatus, error) {
-	var order entity.GetOrderStatus
-
-	if err := r.db.
-		Model(&entity.Order{}).
-		Select("orders.id, orders.status_id, order_statuses.name").
-		Joins("JOIN order_statuses ON orders.status_id = order_statuses.id").
-		Where("orders.id = ? AND orders.shop_id = ? AND orders.user_id = ?", orderID, shopID, userID).
-		First(&order).Error; err != nil {
-		return order, err
+func (r *orderRepository) UpdateOrderStatusByShop(orderID, statusID uint) error {
+	if err := r.db.Model(&entity.Order{}).
+		Where("id = ?", orderID). // ✅ เช็กว่า shop นี้เป็นเจ้าของ order
+		Update("status_id", statusID).Error; err != nil {
+		return errors.Wrapf(err, "[OrderRepository.UpdateOrderStatusByShop]: failed to update status for order id %d", orderID)
 	}
-
-	return order, nil
+	return nil
 }

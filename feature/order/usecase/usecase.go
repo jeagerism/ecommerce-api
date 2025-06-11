@@ -183,21 +183,65 @@ func (u *orderUsecase) FindOrdersByShopID(shopID uint) ([]entity.OrderDetailResp
 	return responses, nil
 }
 
-func (u *orderUsecase) UpdateOrderStatusByUser(orderReq entity.UpdateOrderStatusByUserRequest, userID uint) error {
+func (u *orderUsecase) UpdateOrderStatusByUser(orderReq entity.UpdateOrderStatusRequest, userID uint) error {
 	// ตรวจสอบว่า orderID มีอยู่จริง
-	order, err := u.repo.FindOrderStatusInfo(orderReq.OrderID, orderReq.ShopID, userID)
+	order, err := u.repo.FindOrderStatusByUser(orderReq.OrderID, userID)
 	if err != nil {
 		return errors.Wrapf(err, "[OrderUsecase.UpdateOrderStatusByUser] order ID %d not found for user ID %d", orderReq.OrderID, userID)
 	}
-	if order.Status.ID != orderReq.StatusID {
-		return errors.Errorf("[OrderUsecase.UpdateOrderStatusByUser] order ID %d does not have status ID %d", orderReq.OrderID, orderReq.StatusID)
+	if order.StatusID != orderReq.StatusID {
+		return errors.Errorf("[OrderUsecase.UpdateOrderStatusByUser] order ID %d does not have status ID %d order: %v", orderReq.OrderID, orderReq.StatusID, order)
 	}
+
 	if order.Status.Name != "cancelled" && order.Status.Name != "delivered" {
 		if err := u.repo.UpdateOrderStatusByUser(orderReq.OrderID); err != nil {
-			return errors.Wrapf(err, "[OrderUsecase.UpdateOrderStatusByUser] failed to update order ID %d to cancelled status", orderReq.OrderID)
+			return errors.Wrapf(err, "[OrderUsecase.UpdateOrderStatusByUser] failed to update order ID %d to cancelled status order : %v", orderReq.OrderID, order)
 		}
 		return nil
 	}
 
+	return nil
+}
+
+const (
+	statusPending   = 1
+	statusConfirmed = 2
+	statusShipped   = 3
+	statusDelivered = 4
+	statusCancelled = 5
+)
+
+var allowedStatusesTransitions = map[uint][]uint{
+	statusPending:   {statusConfirmed, statusCancelled},
+	statusConfirmed: {statusShipped, statusCancelled},
+	statusShipped:   {statusDelivered, statusCancelled},
+	statusDelivered: {},
+	statusCancelled: {},
+}
+
+func (u *orderUsecase) UpdateOrderStatusByShop(orderReq entity.UpdateOrderStatusRequest, shopID uint) error {
+	order, err := u.repo.FindOrderStatusByShop(orderReq.OrderID, shopID)
+	if err != nil {
+		return errors.Wrapf(err, "[OrderUsecase.UpdateOrderStatusByShop] order ID %d not found for shop ID %d", orderReq.OrderID, shopID)
+	}
+
+	currentStatusID := order.StatusID
+	newStatusID := orderReq.StatusID
+
+	allowedNextStatuses := allowedStatusesTransitions[currentStatusID]
+	canChange := false
+	for _, allowed := range allowedNextStatuses {
+		if newStatusID == allowed {
+			canChange = true
+			break
+		}
+	}
+	if !canChange {
+		return errors.Errorf("[OrderUsecase.UpdateOrderStatusByShop] cannot change status from ID %d to ID %d", currentStatusID, newStatusID)
+	}
+
+	if err := u.repo.UpdateOrderStatusByShop(orderReq.OrderID, newStatusID); err != nil {
+		return errors.Wrapf(err, "[OrderUsecase.UpdateOrderStatusByShop] failed to update order ID %d to status ID %d", orderReq.OrderID, newStatusID)
+	}
 	return nil
 }
