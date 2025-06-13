@@ -1,6 +1,6 @@
 availableSecrets:
   secretManager:
-    - versionName: projects/783881626577/secrets/env-secret/versions/latest
+    - versionName: projects/783881626577/secrets/env-secret/versions/1
       env: "_ENV_FILE"
 
 steps:
@@ -29,6 +29,6 @@ steps:
 
 images:
   - gcr.io/$PROJECT_ID/ecommerce-api:$SHORT_SHA
-  
+
 options:
   logging: CLOUD_LOGGING_ONLY  # หรือเปลี่ยนเป็นแบบอื่นตามที่เลือก
