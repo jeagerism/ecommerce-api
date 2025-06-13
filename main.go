@@ -103,7 +103,7 @@ func main() {
 	orderShopGroup.Use(middleware.RequireShopRole()) // เฉพาะ shop เท่านั้นที่เข้าถึงได้
 	shopOrderDel.NewShopOrderHandler(orderShopGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
 
-	e.Logger.Fatal(e.Start(":1323"))
+	e.Logger.Fatal(e.Start(":8080"))
 }
 
 func newDB() (*gorm.DB, error) {

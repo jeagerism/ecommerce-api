@@ -11,5 +11,5 @@ RUN go mod download
 COPY . .
 
 RUN go build -o ecommerce-api .
-
+EXPOSE 8080
 CMD ["./ecommerce-api"]
