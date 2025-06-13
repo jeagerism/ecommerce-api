@@ -93,12 +93,12 @@ func main() {
 	userDel.NewUserHandler(userGroup, userUsecase.NewUserUsecase(userRepo.NewUserRepository(DB)))
 
 	// Order routes (protected by user role)
-	orderGroup := e.Group("/api/user/")
+	orderGroup := e.Group("/api/user")
 	orderGroup.Use(middleware.UserAuthMiddleware())
 	orderGroup.Use(middleware.RequireUserRole()) // สามารถเข้าถึงได้ทั้ง user และ shop
 	userOrderDel.NewUserOrderHandler(orderGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
 
-	orderShopGroup := e.Group("/api/shop/")
+	orderShopGroup := e.Group("/api/shop")
 	orderShopGroup.Use(middleware.ShopAuthMiddleware())
 	orderShopGroup.Use(middleware.RequireShopRole()) // เฉพาะ shop เท่านั้นที่เข้าถึงได้
 	shopOrderDel.NewShopOrderHandler(orderShopGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
