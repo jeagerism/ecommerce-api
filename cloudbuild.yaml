@@ -1,19 +1,15 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/ecommerce-repo/ecommerce-api:$SHORT_SHA', '.']
+    args: ['build', '-t',
+           'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-repo/ecommerce-api:$SHORT_SHA', '.']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/ecommerce-repo/ecommerce-api:$SHORT_SHA']
+    args: ['push',
+           'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-repo/ecommerce-api:$SHORT_SHA']
 
   - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - 'ecommerce-api'
-      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/ecommerce-repo/ecommerce-api:$SHORT_SHA'
-      - '--region=us-central1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-
-options:
-  logging: CLOUD_LOGGING_ONLY
+    args: ['run', 'deploy', 'ecommerce-api',
+           '--image=us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-repo/ecommerce-api:$SHORT_SHA',
+           '--region=asia-southeast1',
+           '--platform=managed',
+           '--allow-unauthenticated']
