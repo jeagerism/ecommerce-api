@@ -1,57 +1,46 @@
+# cloudbuild.yaml
 steps:
+  # 1. Build the Docker image
+  # ไม่มี --build-arg สำหรับ Secrets หรือ Config ในขั้นตอนนี้
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        docker build \
-          -t us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA \
-          --build-arg DB_HOST=$$DB_HOST \
-          --build-arg DB_PORT=$$DB_PORT \
-          --build-arg DB_USER=$$DB_USER \
-          --build-arg DB_PASSWORD=$$DB_PASSWORD \
-          --build-arg DB_NAME=$$DB_NAME \
-          --build-arg SSL_MODE=$$SSL_MODE \
-          --build-arg USER_SECRET=$$USER_SECRET \
-          --build-arg SHOP_SECRET=$$SHOP_SECRET \
-          .
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
+      - '.' # Build context is the current directory
 
-    secretEnv:
-      - DB_HOST
-      - DB_PORT
-      - DB_USER
-      - DB_PASSWORD
-      - DB_NAME
-      - SSL_MODE
-      - USER_SECRET
-      - SHOP_SECRET
-
+  # 2. Push the Docker image to Artifact Registry (เหมือนเดิม)
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA']
 
+  # 3. Deploy to Cloud Run
+  # ใช้ --set-secrets สำหรับค่าทั้งหมดที่ต้องการให้เป็น Environment Variable ใน Cloud Run
+  # ไม่ต้องใช้ secretEnv ใน step นี้อีก เพราะ --set-secrets จัดการให้โดยตรง
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        gcloud run deploy ecommerce-api \
-          --image us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA \
-          --region us-central1 \
-          --platform managed \
-          --allow-unauthenticated \
-          --set-env-vars DB_HOST=$$DB_HOST,DB_PORT=$$DB_PORT,DB_USER=$$DB_USER,DB_PASSWORD=$$DB_PASSWORD,DB_NAME=$$DB_NAME,SSL_MODE=$$SSL_MODE,USER_SECRET=$$USER_SECRET,SHOP_SECRET=$$SHOP_SECRET
+      - 'run'
+      - 'deploy'
+      - 'ecommerce-api' # ชื่อ Cloud Run Service ของคุณ
+      - '--image'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
+      - '--region'
+      - 'us-central1' # เลือก Region ของ Cloud Run ให้ตรงกับ Artifact Registry
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated' # หรือ '--no-allow-unauthenticated'
+      - '--set-secrets' # นี่คือจุดที่ถูกต้อง!
+      - 'DB_HOST=projects/783881626577/secrets/DB_HOST:latest'
+      - 'DB_PORT=projects/783881626577/secrets/DB_PORT:latest'
+      - 'DB_USER=projects/783881626577/secrets/DB_USER:latest'
+      - 'DB_PASSWORD=projects/783881626577/secrets/DB_PASSWORD:latest'
+      - 'DB_NAME=projects/783881626577/secrets/DB_NAME:latest'
+      - 'SSL_MODE=projects/783881626577/secrets/SSL_MODE:latest'
+      - 'USER_SECRET=projects/783881626577/secrets/USER_SECRET:latest'
+      - 'SHOP_SECRET=projects/783881626577/secrets/SHOP_SECRET:latest'
 
-    secretEnv:
-      - DB_HOST
-      - DB_PORT
-      - DB_USER
-      - DB_PASSWORD
-      - DB_NAME
-      - SSL_MODE
-      - USER_SECRET
-      - SHOP_SECRET
-
+# availableSecrets: ยังคงต้องมี section นี้อยู่เพื่อให้ Cloud Build Service Account มีสิทธิ์เข้าถึง Secret
+# แต่ secretEnv ในแต่ละ step จะถูกเอาออกเพราะเราไม่ได้ส่งค่าให้ shell หรือ build-arg อีกแล้ว
 availableSecrets:
   secretManager:
     - versionName: projects/783881626577/secrets/DB_HOST/versions/1
@@ -75,7 +64,6 @@ images:
   - us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA
 
 timeout: 1200s
-
 
 options:
   logging: CLOUD_LOGGING_ONLY
