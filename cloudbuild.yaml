@@ -1,22 +1,28 @@
 # cloudbuild.yaml
+# นี่คือไฟล์ Cloud Build Configuration ที่ถูกต้องและสมบูรณ์
+# สำหรับการ Build Go Application ด้วย Docker และ Deploy ไปยัง Cloud Run
+# โดยใช้ Secrets จาก Secret Manager
+
 steps:
   # 1. Build the Docker image
-  # ไม่มี secretEnv ที่นี่ เพราะเราไม่ได้ส่ง secrets เป็น build-args
+  #    ไม่มี 'secretEnv' ในขั้นตอนนี้ เพราะ secrets ไม่ควรถูกส่งผ่าน build-args
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build'
     args:
       - 'build'
       - '-t'
       - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
-      - '.' # Build context is the current directory
+      - '.' # Build context คือ directory ปัจจุบัน
 
-  # 2. Push the Docker image to Artifact Registry
+  # 2. Push the Docker image ไปยัง Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA']
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
 
-  # 3. Deploy to Cloud Run
-  # ไม่มี secretEnv ที่นี่ เพราะเราใช้ --set-secrets ซึ่ง gcloud CLI จัดการเอง
-  # ไม่มี entrypoint: 'bash' หรือ args: ['-c', '|'] ด้วย เพราะไม่จำเป็น
+  # 3. Deploy ไปยัง Cloud Run
+  #    ใช้ '--set-secrets' เพื่อดึงค่า secrets จาก Secret Manager โดยตรง
+  #    ไม่มี 'secretEnv' และไม่ต้องใช้ 'bash -c' เพราะ gcloud CLI จัดการเอง
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
       - 'run'
@@ -25,11 +31,11 @@ steps:
       - '--image'
       - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
       - '--region'
-      - 'us-central1' # เลือก Region ของ Cloud Run ให้ตรงกับ Artifact Registry
+      - 'us-central1' # Region ของ Cloud Run (ควรตรงกับ Artifact Registry)
       - '--platform'
       - 'managed'
-      - '--allow-unauthenticated' # หรือ '--no-allow-unauthenticated'
-      - '--set-secrets' # นี่คือจุดที่ถูกต้องและปลอดภัยที่สุด!
+      - '--allow-unauthenticated' # หรือใช้ '--no-allow-unauthenticated' สำหรับ APIs ที่ต้อง authentication
+      - '--set-secrets' # <-- ใช้ flag นี้สำหรับ secrets และ environment variables ที่ละเอียดอ่อน
       - 'DB_HOST=projects/783881626577/secrets/DB_HOST:latest'
       - 'DB_PORT=projects/783881626577/secrets/DB_PORT:latest'
       - 'DB_USER=projects/783881626577/secrets/DB_USER:latest'
@@ -40,8 +46,8 @@ steps:
       - 'SHOP_SECRET=projects/783881626577/secrets/SHOP_SECRET:latest'
 
 # availableSecrets:
-# ส่วนนี้ต้องยังคงมีอยู่เสมอ เพื่อให้ Cloud Build รู้ว่าต้องเตรียมการเข้าถึง Secrets เหล่านี้จาก Secret Manager
-# และเพื่อให้ Cloud Build Service Account มีสิทธิ์ในการอ่าน Secrets เหล่านี้
+# ส่วนนี้ต้องมีอยู่เสมอ! มันบอก Cloud Build ว่า secrets ใดบ้างที่ Build Pipeline สามารถเข้าถึงได้
+# และ Cloud Build จะจัดการการให้สิทธิ์กับ Service Account ที่ใช้ในการ Build
 availableSecrets:
   secretManager:
     - versionName: projects/783881626577/secrets/DB_HOST/versions/1
