@@ -2,6 +2,9 @@
 # นี่คือไฟล์ Cloud Build Configuration ที่ถูกต้องและสมบูรณ์
 # สำหรับการ Build Go Application ด้วย Docker และ Deploy ไปยัง Cloud Run
 # โดยใช้ Secrets จาก Secret Manager
+#
+# สำคัญมาก: 'secretEnv' จะต้องปรากฏเฉพาะในส่วน 'availableSecrets' ด้านล่างเท่านั้น
+#           จะไม่มี 'secretEnv' อยู่ในส่วน 'steps' อีกต่อไป
 
 steps:
   # 1. Build the Docker image
