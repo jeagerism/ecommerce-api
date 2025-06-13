@@ -13,4 +13,6 @@ steps:
            '--region=asia-southeast1',
            '--platform=managed',
            '--allow-unauthenticated']
-logsBucket: gs://YOUR_LOG_BUCKET/logs/
+options:
+  logging: CLOUD_LOGGING_ONLY
+
