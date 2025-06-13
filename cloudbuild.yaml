@@ -1,7 +1,6 @@
 # cloudbuild.yaml
 steps:
   # 1. Build the Docker image
-  # ไม่มี --build-arg สำหรับ Secrets หรือ Config ในขั้นตอนนี้
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build'
     args:
@@ -9,15 +8,15 @@ steps:
       - '-t'
       - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
       - '.' # Build context is the current directory
+    # *** ลบ secretEnv ออกจากตรงนี้ ***
 
   # 2. Push the Docker image to Artifact Registry (เหมือนเดิม)
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA']
 
   # 3. Deploy to Cloud Run
-  # ใช้ --set-secrets สำหรับค่าทั้งหมดที่ต้องการให้เป็น Environment Variable ใน Cloud Run
-  # ไม่ต้องใช้ secretEnv ใน step นี้อีก เพราะ --set-secrets จัดการให้โดยตรง
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    # ไม่ต้องใช้ entrypoint: 'bash' และ args: ['-c', '|'] แล้ว
     args:
       - 'run'
       - 'deploy'
@@ -38,9 +37,10 @@ steps:
       - 'SSL_MODE=projects/783881626577/secrets/SSL_MODE:latest'
       - 'USER_SECRET=projects/783881626577/secrets/USER_SECRET:latest'
       - 'SHOP_SECRET=projects/783881626577/secrets/SHOP_SECRET:latest'
+    # *** ลบ secretEnv ออกจากตรงนี้ ***
 
-# availableSecrets: ยังคงต้องมี section นี้อยู่เพื่อให้ Cloud Build Service Account มีสิทธิ์เข้าถึง Secret
-# แต่ secretEnv ในแต่ละ step จะถูกเอาออกเพราะเราไม่ได้ส่งค่าให้ shell หรือ build-arg อีกแล้ว
+# availableSecrets: ต้องยังคงมี section นี้อยู่เพื่อให้ Cloud Build Service Account มีสิทธิ์เข้าถึง Secret
+# เพราะ Cloud Build จำเป็นต้องรู้ว่ามี Secret อะไรบ้างที่ต้องถูก "มอบหมาย" ให้กับคำสั่งย่อย
 availableSecrets:
   secretManager:
     - versionName: projects/783881626577/secrets/DB_HOST/versions/1
