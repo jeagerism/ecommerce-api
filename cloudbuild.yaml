@@ -70,3 +70,6 @@ availableSecrets:
   secretManager:
     - versionName: projects/783881626577/secrets/env-secret/versions/1
       env: "_ENV_FILE"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
