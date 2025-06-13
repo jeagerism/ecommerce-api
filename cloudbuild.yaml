@@ -1,75 +1,81 @@
 steps:
-  # Step 1: Load secret from Secret Manager and check values
-  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    id: "verify-secret"
-    entrypoint: "bash"
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    entrypoint: 'bash'
     args:
-      - "-c"
+      - '-c'
       - |
-        echo "$_ENV_FILE" | grep "="
-
-    secretEnv:
-      - "_ENV_FILE"
-
-  # Step 2: Build Docker Image and pass env from secret
-  - name: "gcr.io/cloud-builders/docker"
-    id: "build-docker-image"
-    entrypoint: "bash"
-    args:
-      - "-c"
-      - |
-        echo "$_ENV_FILE" > .env
-        export $(cat .env | xargs)
-
         docker build \
           -t us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA \
-          --build-arg DB_HOST=$DB_HOST \
-          --build-arg DB_PORT=$DB_PORT \
-          --build-arg DB_USER=$DB_USER \
-          --build-arg DB_PASSWORD=$DB_PASSWORD \
-          --build-arg DB_NAME=$DB_NAME \
-          --build-arg SSL_MODE=$SSL_MODE \
-          --build-arg USER_SECRET=$USER_SECRET \
-          --build-arg SHOP_SECRET=$SHOP_SECRET \
-          --progress=plain .
+          --build-arg DB_HOST=$$DB_HOST \
+          --build-arg DB_PORT=$$DB_PORT \
+          --build-arg DB_USER=$$DB_USER \
+          --build-arg DB_PASSWORD=$$DB_PASSWORD \
+          --build-arg DB_NAME=$$DB_NAME \
+          --build-arg SSL_MODE=$$SSL_MODE \
+          --build-arg USER_SECRET=$$USER_SECRET \
+          --build-arg SHOP_SECRET=$$SHOP_SECRET \
+          .
 
     secretEnv:
-      - "_ENV_FILE"
+      - DB_HOST
+      - DB_PORT
+      - DB_USER
+      - DB_PASSWORD
+      - DB_NAME
+      - SSL_MODE
+      - USER_SECRET
+      - SHOP_SECRET
 
-  # Step 3: Push image to Artifact Registry
-  - name: "gcr.io/cloud-builders/docker"
-    id: "push-image"
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
     args:
-      [
-        "push",
-        "us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA"
-      ]
+      - '-c'
+      - |
+        gcloud run deploy ecommerce-api \
+          --image us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA \
+          --region us-central1 \
+          --platform managed \
+          --allow-unauthenticated \
+          --set-env-vars DB_HOST=$$DB_HOST,DB_PORT=$$DB_PORT,DB_USER=$$DB_USER,DB_PASSWORD=$$DB_PASSWORD,DB_NAME=$$DB_NAME,SSL_MODE=$$SSL_MODE,USER_SECRET=$$USER_SECRET,SHOP_SECRET=$$SHOP_SECRET
 
-  # Step 4: Deploy to Cloud Run
-  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
-    id: "deploy-cloudrun"
-    entrypoint: "gcloud"
-    args:
-      [
-        "run",
-        "deploy",
-        "$SERVICE_NAME",
-        "--image",
-        "us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA",
-        "--region",
-        "$REGION",
-        "--platform",
-        "managed",
-        "--allow-unauthenticated"
-      ]
-
-images:
-  - "us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA"
+    secretEnv:
+      - DB_HOST
+      - DB_PORT
+      - DB_USER
+      - DB_PASSWORD
+      - DB_NAME
+      - SSL_MODE
+      - USER_SECRET
+      - SHOP_SECRET
 
 availableSecrets:
   secretManager:
-    - versionName: projects/783881626577/secrets/env-secret/versions/1
-      env: "_ENV_FILE"
+    - versionName: projects/783881626577/secrets/DB_HOST/versions/1
+      env: DB_HOST
+    - versionName: projects/783881626577/secrets/DB_PORT/versions/1
+      env: DB_PORT
+    - versionName: projects/783881626577/secrets/DB_USER/versions/1
+      env: DB_USER
+    - versionName: projects/783881626577/secrets/DB_PASSWORD/versions/1
+      env: DB_PASSWORD
+    - versionName: projects/783881626577/secrets/DB_NAME/versions/1
+      env: DB_NAME
+    - versionName: projects/783881626577/secrets/SSL_MODE/versions/1
+      env: SSL_MODE
+    - versionName: projects/783881626577/secrets/USER_SECRET/versions/1
+      env: USER_SECRET
+    - versionName: projects/783881626577/secrets/SHOP_SECRET/versions/1
+      env: SHOP_SECRET
+
+images:
+  - us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA
+
+timeout: 1200s
+
 
 options:
   logging: CLOUD_LOGGING_ONLY
