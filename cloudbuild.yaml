@@ -26,27 +26,27 @@ steps:
 #   # 3. Deploy ไปยัง Cloud Run
 #   #    ใช้ '--set-secrets' เพื่อดึงค่า secrets จาก Secret Manager โดยตรง
 #   #    ไม่มี 'secretEnv' และไม่ต้องใช้ 'bash -c' เพราะ gcloud CLI จัดการเอง
-#   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-#     args:
-#       - 'run'
-#       - 'deploy'
-#       - 'ecommerce-api' # ชื่อ Cloud Run Service ของคุณ
-#       - '--image'
-#       - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
-#       - '--region'
-#       - 'us-central1' # Region ของ Cloud Run (ควรตรงกับ Artifact Registry)
-#       - '--platform'
-#       - 'managed'
-#       - '--allow-unauthenticated' # หรือใช้ '--no-allow-unauthenticated' สำหรับ APIs ที่ต้อง authentication
-#       - '--set-secrets' # <-- ใช้ flag นี้สำหรับ secrets และ environment variables ที่ละเอียดอ่อน
-#       - 'DB_HOST=projects/783881626577/secrets/DB_HOST:latest'
-#       - 'DB_PORT=projects/783881626577/secrets/DB_PORT:latest'
-#       - 'DB_USER=projects/783881626577/secrets/DB_USER:latest'
-#       - 'DB_PASSWORD=projects/783881626577/secrets/DB_PASSWORD:latest'
-#       - 'DB_NAME=projects/783881626577/secrets/DB_NAME:latest'
-#       - 'SSL_MODE=projects/783881626577/secrets/SSL_MODE:latest'
-#       - 'USER_SECRET=projects/783881626577/secrets/USER_SECRET:latest'
-#       - 'SHOP_SECRET=projects/783881626577/secrets/SHOP_SECRET:latest'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ecommerce-api' # ชื่อ Cloud Run Service ของคุณ
+      - '--image'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
+      - '--region'
+      - 'us-central1' # Region ของ Cloud Run (ควรตรงกับ Artifact Registry)
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated' # หรือใช้ '--no-allow-unauthenticated' สำหรับ APIs ที่ต้อง authentication
+      - '--set-secrets' # <-- ใช้ flag นี้สำหรับ secrets และ environment variables ที่ละเอียดอ่อน
+      - 'DB_HOST=projects/783881626577/secrets/DB_HOST:latest'
+      - 'DB_PORT=projects/783881626577/secrets/DB_PORT:latest'
+      - 'DB_USER=projects/783881626577/secrets/DB_USER:latest'
+      - 'DB_PASSWORD=projects/783881626577/secrets/DB_PASSWORD:latest'
+      - 'DB_NAME=projects/783881626577/secrets/DB_NAME:latest'
+      - 'SSL_MODE=projects/783881626577/secrets/SSL_MODE:latest'
+      - 'USER_SECRET=projects/783881626577/secrets/USER_SECRET:latest'
+      - 'SHOP_SECRET=projects/783881626577/secrets/SHOP_SECRET:latest'
 
 # # availableSecrets:
 # # ส่วนนี้ต้องมีอยู่เสมอ! มันบอก Cloud Build ว่า secrets ใดบ้างที่ Build Pipeline สามารถเข้าถึงได้
