@@ -1,79 +1,35 @@
-# cloudbuild.yaml
-# นี่คือไฟล์ Cloud Build Configuration ที่ถูกต้องและสมบูรณ์
-# สำหรับการ Build Go Application ด้วย Docker และ Deploy ไปยัง Cloud Run
-# โดยใช้ Secrets จาก Secret Manager
-#
-# สำคัญมาก: 'secretEnv' จะต้องปรากฏเฉพาะในส่วน 'availableSecrets' ด้านล่างเท่านั้น
-#           จะไม่มี 'secretEnv' อยู่ในส่วน 'steps' อีกต่อไป
-
 steps:
   # 1. Build the Docker image
-  #    ไม่มี 'secretEnv' ในขั้นตอนนี้ เพราะ secrets ไม่ควรถูกส่งผ่าน build-args
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build'
     args:
       - 'build'
       - '-t'
-      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:lastest'
       - '.' # Build context คือ directory ปัจจุบัน
 
   # 2. Push the Docker image ไปยัง Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:lastest'
 
 #   # 3. Deploy ไปยัง Cloud Run
 #   #    ใช้ '--set-secrets' เพื่อดึงค่า secrets จาก Secret Manager โดยตรง
-#   #    ไม่มี 'secretEnv' และไม่ต้องใช้ 'bash -c' เพราะ gcloud CLI จัดการเอง
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
+      - 'gcloud'
       - 'run'
       - 'deploy'
-      - 'ecommerce-api' # ชื่อ Cloud Run Service ของคุณ
+      - 'ecommerce-api'
       - '--image'
-      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:lastest'
       - '--region'
-      - 'us-central1' # Region ของ Cloud Run (ควรตรงกับ Artifact Registry)
+      - 'us-central1'
       - '--platform'
       - 'managed'
-      - '--allow-unauthenticated' # หรือใช้ '--no-allow-unauthenticated' สำหรับ APIs ที่ต้อง authentication
-      - '--set-secrets' # <-- ใช้ flag นี้สำหรับ secrets และ environment variables ที่ละเอียดอ่อน
-      - 'DB_HOST=projects/783881626577/secrets/DB_HOST:latest'
-      - 'DB_PORT=projects/783881626577/secrets/DB_PORT:latest'
-      - 'DB_USER=projects/783881626577/secrets/DB_USER:latest'
-      - 'DB_PASSWORD=projects/783881626577/secrets/DB_PASSWORD:latest'
-      - 'DB_NAME=projects/783881626577/secrets/DB_NAME:latest'
-      - 'SSL_MODE=projects/783881626577/secrets/SSL_MODE:latest'
-      - 'USER_SECRET=projects/783881626577/secrets/USER_SECRET:latest'
-      - 'SHOP_SECRET=projects/783881626577/secrets/SHOP_SECRET:latest'
-
-# # availableSecrets:
-# # ส่วนนี้ต้องมีอยู่เสมอ! มันบอก Cloud Build ว่า secrets ใดบ้างที่ Build Pipeline สามารถเข้าถึงได้
-# # และ Cloud Build จะจัดการการให้สิทธิ์กับ Service Account ที่ใช้ในการ Build
-# availableSecrets:
-#   secretManager:
-#     - versionName: projects/783881626577/secrets/DB_HOST/versions/1
-#       env: DB_HOST
-#     - versionName: projects/783881626577/secrets/DB_PORT/versions/1
-#       env: DB_PORT
-#     - versionName: projects/783881626577/secrets/DB_USER/versions/1
-#       env: DB_USER
-#     - versionName: projects/783881626577/secrets/DB_PASSWORD/versions/1
-#       env: DB_PASSWORD
-#     - versionName: projects/783881626577/secrets/DB_NAME/versions/1
-#       env: DB_NAME
-#     - versionName: projects/783881626577/secrets/SSL_MODE/versions/1
-#       env: SSL_MODE
-#     - versionName: projects/783881626577/secrets/USER_SECRET/versions/1
-#       env: USER_SECRET
-#     - versionName: projects/783881626577/secrets/SHOP_SECRET/versions/1
-#       env: SHOP_SECRET
-
-# images:
-#   - us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:$SHORT_SHA
-
-# timeout: 1200s
+      - '--allow-unauthenticated'
+      - '--set-secrets=DB_HOST=projects/783881626577/secrets/DB_HOST:latest,DB_PORT=projects/783881626577/secrets/DB_PORT:latest,DB_USER=projects/783881626577/secrets/DB_USER:latest,DB_PASSWORD=projects/783881626577/secrets/DB_PASSWORD:latest,DB_NAME=projects/783881626577/secrets/DB_NAME:latest,SSL_MODE=projects/783881626577/secrets/SSL_MODE:latest,USER_SECRET=projects/783881626577/secrets/USER_SECRET:latest,SHOP_SECRET=projects/783881626577/secrets/SHOP_SECRET:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
