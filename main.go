@@ -8,6 +8,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/jeagerism/ecommerce-api/entity"
+	shopOrderDel "github.com/jeagerism/ecommerce-api/feature/order/delivery/shop"
+	userOrderDel "github.com/jeagerism/ecommerce-api/feature/order/delivery/user"
+	orderRepo "github.com/jeagerism/ecommerce-api/feature/order/repository"
+	orderUsecase "github.com/jeagerism/ecommerce-api/feature/order/usecase"
 	productDel "github.com/jeagerism/ecommerce-api/feature/product/delivery"
 	productRepo "github.com/jeagerism/ecommerce-api/feature/product/repository"
 	productUsecase "github.com/jeagerism/ecommerce-api/feature/product/usecase"
@@ -40,7 +44,17 @@ func init() {
 	}
 
 	// Auto migrate
-	err = DB.AutoMigrate(&entity.Shop{}, &entity.Product{}, &entity.User{}, &entity.UserAddress{})
+	err = DB.AutoMigrate(
+		&entity.Shop{},
+		&entity.Product{},
+		&entity.User{},
+		&entity.UserAddress{},
+		&entity.Order{},
+		&entity.OrderItem{},
+		&entity.Courier{},
+		&entity.OrderStatus{},
+	)
+
 	if err != nil {
 		logrus.Fatal("Migration failed: ", err)
 	}
@@ -48,33 +62,53 @@ func init() {
 
 func main() {
 	_ = godotenv.Load()
-	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	e := echo.New()
 
-	// 👇 Group แยก public / protected
-	publicShop := e.Group("/api")
-	protectedShop := e.Group("/api")
-	protectedShop.Use(middleware.RoleAuthMiddleware(jwtSecret, "shop"))
+	// Public routes (ไม่ต้องมี middleware)
+	publicShop := e.Group("/api/shop")
+	shopDel.NewPublicHandler(publicShop, shopUsecase.NewShopUsecase(shopRepo.NewShopRepository(DB)))
 
-	// ⬇️ Shop setup
+	// Protected routes (ต้อง authentication + authorization)
+	protectedShop := e.Group("/api/shop")
+	protectedShop.Use(middleware.ShopAuthMiddleware()) // Authentication
+	protectedShop.Use(middleware.RequireShopRole())    // Authorization
 
-	shopDel.NewPublicHandler(publicShop, shopUsecase.NewShopUsecase(shopRepo.NewShopRepository(DB), jwtSecret))
-	shopDel.NewProtectedHandler(protectedShop, shopUsecase.NewShopUsecase(shopRepo.NewShopRepository(DB), jwtSecret))
+	shopDel.NewProtectedHandler(protectedShop, shopUsecase.NewShopUsecase(shopRepo.NewShopRepository(DB)))
 
-	// ⬇️ Product setup
+	// Public product routes
+	publicProduct := e.Group("/api/product")
+	productDel.NewPublicProductHandler(publicProduct, productUsecase.NewProductUsecase(productRepo.NewProductRepository(DB)))
 
-	productDel.NewPublicProductHandler(publicShop, productUsecase.NewProductUsecase(productRepo.NewProductRepository(DB)))
-	productDel.NewProtectedProductHandler(protectedShop, productUsecase.NewProductUsecase(productRepo.NewProductRepository(DB)))
+	// Protected product routes
+	protectedProduct := e.Group("/api/product")
+	protectedProduct.Use(middleware.ShopAuthMiddleware())
+	protectedProduct.Use(middleware.AuthorizeRoles("shop"))
+	productDel.NewProtectedProductHandler(protectedProduct, productUsecase.NewProductUsecase(productRepo.NewProductRepository(DB)))
 
-	// ⬇️ User setup
-	publicUser := e.Group("/api/user")
-	protectedUser := e.Group("/api/user")
-	protectedUser.Use(middleware.RoleAuthMiddleware(jwtSecret, "user"))
+	// User routes
 
-	userDel.NewPublicUserHandler(publicUser, userUsecase.NewUserUsecase(userRepo.NewUserRepository(DB), jwtSecret))
-	userDel.NewProtectedUserHandler(protectedUser, userUsecase.NewUserUsecase(userRepo.NewUserRepository(DB), jwtSecret))
+	userGroup := e.Group("/api/user")
+	userGroup.Use(middleware.UserAuthMiddleware())
+	userGroup.Use(middleware.RequireUserRole())
+	userDel.NewUserHandler(userGroup, userUsecase.NewUserUsecase(userRepo.NewUserRepository(DB)))
 
-	e.Logger.Fatal(e.Start(":1323"))
+	// Order routes (protected by user role)
+	orderGroup := e.Group("/api/user")
+	orderGroup.Use(middleware.UserAuthMiddleware())
+	orderGroup.Use(middleware.RequireUserRole()) // สามารถเข้าถึงได้ทั้ง user และ shop
+	userOrderDel.NewUserOrderHandler(orderGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
+
+	orderShopGroup := e.Group("/api/shop")
+	orderShopGroup.Use(middleware.ShopAuthMiddleware())
+	orderShopGroup.Use(middleware.RequireShopRole()) // เฉพาะ shop เท่านั้นที่เข้าถึงได้
+	shopOrderDel.NewShopOrderHandler(orderShopGroup, orderUsecase.NewOrderUsecase(orderRepo.NewOrderRepository(DB)))
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	e.Logger.Fatal(e.Start(":" + port))
+
 }
 
 func newDB() (*gorm.DB, error) {
@@ -85,10 +119,11 @@ func newDB() (*gorm.DB, error) {
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
 	dbname := os.Getenv("DB_NAME")
+	sslmode := os.Getenv("SSL_MODE")
 
 	connString := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname,
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		host, port, user, password, dbname, sslmode,
 	)
 
 	return gorm.Open(postgres.Open(connString), &gorm.Config{})

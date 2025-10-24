@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"os"
+
 	"github.com/jeagerism/ecommerce-api/domain"
 	"github.com/jeagerism/ecommerce-api/entity"
 	"github.com/jeagerism/ecommerce-api/util"
@@ -8,14 +10,12 @@ import (
 )
 
 type userUsecase struct {
-	repo      domain.UserRepository
-	jwtSecret []byte
+	repo domain.UserRepository
 }
 
-func NewUserUsecase(repo domain.UserRepository, jwtSecret []byte) domain.UserUsecase {
+func NewUserUsecase(repo domain.UserRepository) domain.UserUsecase {
 	return &userUsecase{
-		repo:      repo,
-		jwtSecret: jwtSecret,
+		repo: repo,
 	}
 }
 
@@ -57,8 +57,9 @@ func (u *userUsecase) Login(input *entity.LoginInput) (string, error) {
 		return "", errors.Wrap(err, "[UserUsecase.Login] invalid email or password")
 	}
 
+	userSecret := []byte(os.Getenv("USER_SECRET")) // Replace with your actual secret key
 	// Generate JWT token
-	token, err := util.GenerateJWT(user.ID, user.Email, "user", u.jwtSecret)
+	token, err := util.GenerateJWT(user.ID, "user", userSecret)
 	if err != nil {
 		return "", errors.Wrap(err, "[UserUsecase.Login] failed to generate JWT")
 	}

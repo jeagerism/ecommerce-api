@@ -1,0 +1,35 @@
+steps:
+  # 1. Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:lastest'
+      - '.' # Build context คือ directory ปัจจุบัน
+
+  # 2. Push the Docker image ไปยัง Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:lastest'
+
+#   # 3. Deploy ไปยัง Cloud Run
+#   #    ใช้ '--set-secrets' เพื่อดึงค่า secrets จาก Secret Manager โดยตรง
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - 'gcloud'
+      - 'run'
+      - 'deploy'
+      - 'ecommerce-api'
+      - '--image'
+      - 'us-central1-docker.pkg.dev/test-ecommerce-462704/ecommerce-api/ecommerce-api:lastest'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-secrets=DB_HOST=projects/783881626577/secrets/DB_HOST:latest,DB_PORT=projects/783881626577/secrets/DB_PORT:latest,DB_USER=projects/783881626577/secrets/DB_USER:latest,DB_PASSWORD=projects/783881626577/secrets/DB_PASSWORD:latest,DB_NAME=projects/783881626577/secrets/DB_NAME:latest,SSL_MODE=projects/783881626577/secrets/SSL_MODE:latest,USER_SECRET=projects/783881626577/secrets/USER_SECRET:latest,SHOP_SECRET=projects/783881626577/secrets/SHOP_SECRET:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
